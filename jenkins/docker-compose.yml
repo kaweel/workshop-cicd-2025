@@ -35,21 +35,64 @@ services:
     environment:
       - JENKINS_URL=http://jenkins-master-image:8080
       - JENKINS_AGENT_NAME=go-agent
-      - JENKINS_SECRET=${JENKINS_SECRET}
+      - JENKINS_SECRET=${JENKINS_SECRET_AGENT_GO}
       - DOCKER_HOST=tcp://dind-image:2375
     networks:
       - jenkins-network
-  local-registry:
+  jenkins-docker-agent-image:
+    image: jenkins-docker-agent:latest
+    container_name: jenkins-docker-agent-container
+    build:
+      context: .
+      dockerfile: docker-agent/Dockerfile
+    restart: unless-stopped
+    environment:
+      - JENKINS_URL=http://jenkins-master-image:8080
+      - JENKINS_AGENT_NAME=docker-agent
+      - JENKINS_SECRET=${JENKINS_SECRET_AGENT_DOCKER}
+      - DOCKER_HOST=tcp://dind-image:2375
+    networks:
+      - jenkins-network
+  registry-image:
     image: registry:2
-    container_name: local-regiscontainer
+    container_name: registry-container
     ports:
       - 5000:5000
     volumes:
-      - local-registry-data:/var/lib/registry
+      - registry-data:/var/lib/registry
     networks:
       - jenkins-network
+  sonarqube-ce-image:
+    image: sonarqube:community
+    container_name: sonarqube-ce-container
+    ports:
+      - 9000:9000
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+      - SONAR_JDBC_URL=jdbc:postgresql://sonar-db-image:5432/sonar
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
+    depends_on:
+      - sonar-db-image
+  sonar-db-image:
+    image: postgres:17
+    container_name: sonar-db-container
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_DB=sonar
+    ports:
+      - 5432:5432
+    volumes:
+      - sonar-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonar"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 volumes:
   jenkins-master-data:
-  local-registry-data:
+  registry-data:
+  sonar-db-data:
 networks:
   jenkins-network:
