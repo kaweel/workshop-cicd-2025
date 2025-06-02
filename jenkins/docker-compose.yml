@@ -74,6 +74,8 @@ services:
       - SONAR_JDBC_PASSWORD=sonar
     depends_on:
       - sonar-db-image
+    networks:
+      - jenkins-network
   sonar-db-image:
     image: postgres:17
     container_name: sonar-db-container
@@ -90,6 +92,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - jenkins-network
 volumes:
   jenkins-master-data:
   registry-data:
