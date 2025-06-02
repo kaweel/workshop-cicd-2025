@@ -1,0 +1,55 @@
+services:
+  dind-image:
+    image: docker:dind
+    container_name: dind-container
+    privileged: true
+    expose:
+      - "2375"
+    environment:
+      - DOCKER_TLS_CERTDIR=
+    command: ["--host=tcp://0.0.0.0:2375", "--host=unix:///var/run/docker.sock"]
+    networks:
+      - jenkins-network
+  jenkins-master-image:
+    image: jenkins-master-image:latest
+    container_name: jenkins-master-container
+    build:
+      context: .
+      dockerfile: master/Dockerfile
+    ports:
+      - 8080:8080
+      - 50000:50000
+    volumes:
+      - jenkins-master-home:/var/jenkins_home
+    environment:
+      - JENKINS_SLAVE_AGENT_PORT=50000
+    networks:
+      - jenkins-network
+  jenkins-go-agent-image:
+    image: jenkins-go-agent:latest
+    container_name: jenkins-agent-container
+    build:
+      context: .
+      dockerfile: go-agent/Dockerfile
+    restart: unless-stopped
+    environment:
+      - JENKINS_URL=http://jenkins-master-image:8080
+      - JENKINS_AGENT_NAME=go-agent
+      - JENKINS_SECRET=
+      - DOCKER_HOST=tcp://dind-image:2375
+    networks:
+      - jenkins-network
+  local-registry:
+    image: registry:2
+    container_name: local-regiscontainer
+    ports:
+      - 5000:5000
+    volumes:
+      - local-registry-data:/var/lib/registry
+    networks:
+      - jenkins-network
+volumes:
+  jenkins-master-data:
+  local-registry-data:
+networks:
+  jenkins-network:
