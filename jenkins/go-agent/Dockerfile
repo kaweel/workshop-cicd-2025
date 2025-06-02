@@ -4,8 +4,8 @@ FROM jenkins/inbound-agent:jdk17 as go-agent
 USER root
 
 RUN apt update && \
-    apt install -y && \
-    curl docker-cli
+    apt install -y curl && \
+    curl -fsSL https://get.docker.com | sh
 
 COPY --from=go-builder /usr/local/go /usr/local/go
 ENV GOPATH=/home/jenkins/agent/go

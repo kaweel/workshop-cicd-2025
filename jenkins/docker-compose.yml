@@ -20,14 +20,14 @@ services:
       - 8080:8080
       - 50000:50000
     volumes:
-      - jenkins-master-home:/var/jenkins_home
+      - jenkins-master-data:/var/jenkins_home
     environment:
       - JENKINS_SLAVE_AGENT_PORT=50000
     networks:
       - jenkins-network
   jenkins-go-agent-image:
     image: jenkins-go-agent:latest
-    container_name: jenkins-agent-container
+    container_name: jenkins-go-agent-container
     build:
       context: .
       dockerfile: go-agent/Dockerfile
@@ -35,7 +35,7 @@ services:
     environment:
       - JENKINS_URL=http://jenkins-master-image:8080
       - JENKINS_AGENT_NAME=go-agent
-      - JENKINS_SECRET=
+      - JENKINS_SECRET=${JENKINS_SECRET}
       - DOCKER_HOST=tcp://dind-image:2375
     networks:
       - jenkins-network
